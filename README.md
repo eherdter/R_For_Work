@@ -1,1 +1,1 @@
-# R_For_Work
+This is a repository used to store helper scripts used by work colleagues. 
