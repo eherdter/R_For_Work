@@ -1,0 +1,107 @@
+---
+title: "Length Frequency Bubble Plot"
+author: "Stock Assessment Group FWRI, Liz Herdter"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    number_sections: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+
+```
+
+# _Main Objectives_
+1. Produce bubble plots describing length frequencies.
+
+This is the resource I used to create the plots is [here.](http://t-redactyl.io/blog/2016/02/creating-plots-in-r-using-ggplot2-part-6-weighted-scatterplots.html)
+
+
+# _Start Here_ 
+Load packages.
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+```
+
+## Define User Inputs
+
+The lowest length bin.
+```{r}
+lbinlow=2
+```
+
+The highest length bin.
+```{r}
+lbinhigh=90
+```
+
+How many breaks you want to have.
+```{r}
+lbinbreaks=8
+```
+
+Specify size range for min and max if you do not like the default base size ramp. 
+```{r}
+size_range_min = 1
+size_range_max= 10
+```
+
+## Get Data
+Here is some example data from the West Florida Shelf Hogfish Update.
+
+```{r}
+setwd("G:/DATA/SPECIES/HOGFISH/Hogfish_2017/AgeLength/Rexported_spreadsheets")
+lengths = read.csv("WFS_LengthSS_Gear.csv", header=T)
+comhl <- subset(lengths, Fleet==1) %>% select(Year, X2:X90) # subset for just 1 fleet
+```
+
+## Wrangle it the way the data need to be for ggplot
+
+The data are not in the right format. Right now they are just a bunch of length observations in bins..
+```{r}
+head(comhl)
+```
+
+Gather the length bins (2-90) and give them a column name and arrange by year
+```{r warning=FALSE}
+com_lengths <- comhl %>% gather(X2:X90, key="Length_cat", value="N") %>% arrange(Year)
+head(com_lengths)
+```
+The length_cat entries are in a weird format of X2-X90. So let's make a new column called Len_cat that only has the bin numbers. To do this remove the "x" with the gsub method. 
+```{r warning=FALSE}
+com_lengths <- com_lengths %>%
+              mutate(Len_cat = as.numeric(gsub("X", "", Length_cat))) %>%
+              select(-Length_cat)
+
+
+head(com_lengths)
+```
+Last thing... Year needs to be a factor. 
+```{r}
+com_lengths$Year <- as.factor(com_lengths$Year)
+
+str(com_lengths$Year)
+```
+Good! Now we are all ready to plot. 
+
+## Plot it
+```{r}
+g <- ggplot(com_lengths, aes(x=Year, y=Len_cat, size=N)) + 
+  geom_point(shape=21, fill="purple") + #make an empty bubble  and then fill with a color 
+  scale_y_continuous(name="Length Bin", breaks = seq(lbinlow, lbinhigh, lbinbreaks))  +
+  theme_bw()+
+  ggtitle("Length Frequency Bubble Plot for Hogfish-Commercial Hook and Line ") 
+
+g
+```
+
+If you want to change the size of the ramp (size of the bubbles for each level) you can do that with 
+'r scale_size_continous'. 
+```{r}
+g + scale_size_continuous(range=c(size_range_min, size_range_max)) 
+```
+
